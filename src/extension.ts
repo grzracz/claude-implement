@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { exec } from "child_process";
 
 export function activate(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand(
@@ -58,23 +57,39 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
+import { spawn } from "child_process";
+
 function runClaude(prompt: string, cwd?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const escaped = prompt
-      .replace(/\\/g, "\\\\")
-      .replace(/"/g, '\\"')
-      .replace(/\n/g, "\\n");
-    exec(
-      `claude -p "${escaped}" --output-format text`,
-      { cwd, maxBuffer: 1024 * 1024 },
-      (error, stdout, stderr) => {
-        if (error) {
-          reject(stderr || error.message);
-        } else {
-          resolve(stdout.trim());
-        }
+    const proc = spawn("claude", ["-p", "-", "--output-format", "text"], {
+      cwd,
+      shell: true,
+    });
+
+    let stdout = "";
+    let stderr = "";
+
+    proc.stdout.on("data", (data) => {
+      stdout += data;
+    });
+    proc.stderr.on("data", (data) => {
+      stderr += data;
+    });
+
+    proc.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+      } else {
+        reject(stderr || `Process exited with code ${code}`);
       }
-    );
+    });
+
+    proc.on("error", (err) => {
+      reject(err.message);
+    });
+
+    proc.stdin.write(prompt);
+    proc.stdin.end();
   });
 }
 

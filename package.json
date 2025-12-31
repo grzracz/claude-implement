@@ -2,7 +2,7 @@
   "name": "claude-implement",
   "displayName": "claude-implement",
   "description": "Implement function stub with Claude Code through a button press and selection",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.107.0"
   },
@@ -21,8 +21,8 @@
     "keybindings": [
         {
             "command": "claude-implement.implement",
-            "key": "ctrl+shift+i",
-            "mac": "cmd+shift+i",
+            "key": "ctrl+alt+i",
+            "mac": "cmd+alt+i",
             "when": "editorTextFocus && editorHasSelection"
         }
     ]
