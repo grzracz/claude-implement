@@ -21,21 +21,33 @@ export function activate(context: vscode.ExtensionContext) {
       const filePath = editor.document.uri.fsPath;
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
-      const prompt = `In the file ${filePath}, implement this function stub. Return ONLY the completed function code. No markdown fences, no explanation, no comments. Just the raw code.\n\n${stub}`;
+      const prompt = `In the file ${filePath}, implement this function stub. Return ONLY the completed function code. No markdown fences, no explanation, no comments about what you did. Just the raw code.\n\n${stub}`;
 
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: "Implementing...",
-          cancellable: false,
+          title: "Implementing",
+          cancellable: true,
         },
-        async () => {
+        async (progress, token) => {
+          let seconds = 0;
+          const timer = setInterval(() => {
+            seconds++;
+            progress.report({ message: `${seconds}s elapsed...` });
+          }, 1000);
+
+          token.onCancellationRequested(() => {
+            clearInterval(timer);
+          });
+
           try {
             const result = await runClaude(prompt, workspaceRoot);
+            clearInterval(timer);
             await editor.edit((editBuilder) => {
               editBuilder.replace(selection, result);
             });
           } catch (err) {
+            clearInterval(timer);
             vscode.window.showErrorMessage(`Claude error: ${err}`);
           }
         }
